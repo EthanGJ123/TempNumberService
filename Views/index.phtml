@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Temporary Phone Number Service</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+
+    <!-- Custom CSS -->
+    <style>
+
+    </style>
+
+    <?php
+        use TempNumberService\Models\MessageDataSet;
+    ?>
+</head>
+<body>
+<div class="container d-grid">
+    <h1>Welcome to the Temporary Phone Number Service!</h1>
+    <form method="get" id="searchForm" onsubmit="return onSearchFormSubmit(this)">
+        <div class="form-check m-2">
+            <input type="checkbox" class="form-check-input" name="includekeywords" id="includeKeywords" <?php echo ($view->includeKeywords ? 'checked' : ''); ?>>
+            <label for="includeKeywords" class="form-check-label">Include/Exclude Message Keywords</label>
+        </div>
+        <div class="form-floating">
+            <input type="text" class="form-control" id="keywords" name="keywords" placeholder="Keywords" <?php if(isset($view->keywords)) { echo 'value="' . $view->keywords . '"'; } ?>>
+            <label for="keywords">Only show numbers <a id="withwithout"></a> message keywords:</label>
+        </div>
+        <input type="hidden" name="number" <?php if(isset($view->number)) { echo 'value="' . $view->number . '"'; } ?>>
+        <input type="submit" class="form-control" value="Submit">
+    </form>
+    <?php if($view->numbers): ?>
+        <table class="table table-hover">
+            <thead>
+            <tr>
+                <th>Number</th>
+                <th>Inbox</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php
+            foreach ($view->numbers as $numberdata) {
+                    $number = $numberdata->get_number();
+                    $selected = isset($view->number) && $number == $view->number; ?>
+                    <tr <?php if($selected) echo 'class="bg-primary-subtle"' ?>>
+                        <td><a href="#" onclick="setNumber('<?php echo $number ?>')"><?php echo $number ?></a></td>
+                        <td><button><?php echo MessageDataSet::fetch_inbox_count_for($number)?></button></td>
+                        <?php if($selected && isset($view->numbermessages)): ?>
+                            <td>
+                                <button onclick="setNumber(null)">></button>
+                                <?php if($view->includeKeywords) foreach ($view->numbermessages as $numbermessage) { ?>
+                                    <p><?php echo $numbermessage->get_text(); ?></p>
+                                <?php }?>
+                            </td>
+                        <?php endif ?>
+                    </tr>
+            <?php }; ?>
+            </tbody>
+        </table>
+    <?php else: ?>
+        <p>Your search gave 0 results.</p>
+    <?php endif ?>
+</div>
+<!-- Include JQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script type="text/javascript">
+
+    function onSearchFormSubmit(sender)
+    {
+        let formData = new FormData(sender);
+        const inputNames = ["keywords", "number"];
+        inputNames.forEach(function (inputName)
+        {
+            let value = formData.get(inputName);
+            if(value == null || value === "")
+                formData.delete(inputName);
+        });
+
+        if(formData.get("includekeywords") === "on")
+            formData.set("includekeywords", "");
+
+        const data = [...formData.entries()];
+        let urlParams = data
+            .map(x => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`)
+            .join('&')
+            .replace(new RegExp("includekeywords="), "includekeywords");
+
+        window.location = "/?" + urlParams;
+
+        return false;
+    }
+
+    let includeKeywords = $("#includeKeywords");
+    let value = includeKeywords.is(':checked');
+    let withWithoutLink = $('#withwithout');
+    if (value)
+    {
+        withWithoutLink.css('color', 'green');
+        withWithoutLink.text('with');
+    }
+    else
+    {
+        withWithoutLink.css('color', 'red');
+        withWithoutLink.text('without');
+    }
+
+    includeKeywords.change(function ()
+    {
+        $("#searchForm").submit();
+    });
+
+    function setNumber(number)
+    {
+        $("input[name=number]").val(number);
+        $("#searchForm").submit();
+    }
+
+</script>
+<!-- Include Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+</body>
+</html>
